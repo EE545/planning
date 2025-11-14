@@ -33,6 +33,7 @@ class PlannerROS:
         cache_roadmap=False,
         tf_prefix="",
         tf_listener=None,
+        num_goals=1,
     ):
         """Motion planning ROS wrapper.
 
@@ -55,6 +56,12 @@ class PlannerROS:
         self.connection_radius = connection_radius
         self.do_shortcut = do_shortcut
 
+        self.multi_goals = num_goals > 1
+        self.num_goals = num_goals
+        if self.multi_goals:
+            print("Accept multiple goals")
+            self.goals = []
+            self.route_sent = False
 
         self.permissible_region, self.map_info = utils.get_map("/static_map")
         self.problem = SE2Problem(
@@ -66,7 +73,7 @@ class PlannerROS:
         self.rm = None
 
         self.goal_sub = rospy.Subscriber(
-            "/move_base_simple/goal", PoseStamped, self.get_goal
+            "/move_base_simple/goal", PoseStamped, self.get_goal,queue_size=num_goals
         )
 
         self.nodes_viz = rospy.Publisher(
@@ -141,6 +148,19 @@ class PlannerROS:
         # Return interpolated path
         return self.rm.compute_qpath(path)
 
+    def plan_multi_goals(self, start):
+        world_points = []
+        for i, goal in enumerate(self.goals):
+            print("Plan from {} to {}".format(start, goal))
+            path = self.plan_to_goal(start, goal)
+            if path is None:
+                print("Failed to find a plan")
+                return None
+            world_points += [path]
+            start = goal
+        print("got a plan")
+        world_points = np.concatenate(world_points, axis=0)
+        return world_points
 
     def get_goal(self, msg):
         """Goal callback function."""
@@ -150,7 +170,20 @@ class PlannerROS:
         self.goal = np.array(utils.pose_to_particle(msg.pose))
         start = self._get_car_pose()
 
-        path_states = self.plan_to_goal(start, self.goal)
+        path_states = None
+        if self.multi_goals:
+            if self.route_sent:
+                self.route_sent = False
+                self.goals = []
+            self.goals += [self.goal.copy()]
+            if len(self.goals) == self.num_goals:
+                print("Got the final goal for mutli goal. Planning for multiple goals")
+                path_states = self.plan_multi_goals(start)
+            else:
+                print("Got {}/{} goals.".format(len(self.goals), self.num_goals))
+        else:
+            path_states = self.plan_to_goal(start, self.goal)
+            
         if path_states is None:
             return False
         return self.send_path(path_states)

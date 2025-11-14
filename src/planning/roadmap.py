@@ -45,11 +45,6 @@ class Roadmap(object):
         self.edges_evaluated = 0
         self.graph, self.vertices, self.weighted_edges = self.construct()
 
-        # Print some graph summary statistics
-        print("Lazy:", self.lazy)
-        print("Vertices:", self.num_vertices)
-        print("Edges:", self.weighted_edges.shape[0])
-
     def heuristic(self, n1, n2):
         """Compute the heuristic between two nodes in the roadmap.
 
@@ -156,6 +151,42 @@ class Roadmap(object):
                 pickle.dump(data, f)
                 print("Saved roadmap to", self.saveto)
         return self.graph, self.vertices, self.weighted_edges
+
+    def rebuild_graph(self):
+        """Rebuild graph when vertices and weighted_edges have changed
+
+        Args:
+            max_iters: maximum number of sampling iterations
+
+        Returns:
+            vertices: np.array of states with shape num_vertices x D
+        """
+
+        # Insert the vertices and edges into a NetworkX graph object
+        if self.directed:
+            self.graph = nx.DiGraph()
+        else:
+            self.graph = nx.Graph()
+        vbunch = [
+            (i, dict(config=config))
+            for i, config in zip(np.arange(self.num_vertices, dtype=int), self.vertices)
+        ]
+        ebunch = [(int(u), int(v), float(w)) for u, v, w in self.weighted_edges]
+        self.graph.add_nodes_from(vbunch)
+        self.graph.add_weighted_edges_from(ebunch, "weight")
+
+        # Cache this roadmap, if path is specified.
+        if self.saveto is not None:
+            with open(self.saveto, "wb") as f:
+                data = {
+                    "graph": self.graph,
+                    "vertices": self.vertices,
+                    "weighted_edges": self.weighted_edges,
+                }
+                pickle.dump(data, f)
+                print("Saved roadmap to", self.saveto)
+        return self.graph, self.vertices, self.weighted_edges
+
 
     def sample_vertices(self, max_iters=100):
         """Sample self.num_vertices vertices from self.sampler.

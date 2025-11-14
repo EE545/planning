@@ -12,5 +12,6 @@ if __name__ == "__main__":
         curvature=float(rospy.get_param("~curvature")),
         tf_prefix=rospy.get_param("~tf_prefix", ""),
         cache_roadmap=bool(rospy.get_param("~cache_roadmap")),
+        num_goals=(rospy.get_param("~num_goals")),
     )
     rospy.spin()

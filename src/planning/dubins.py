@@ -9,7 +9,7 @@ import math
 
 import matplotlib.pyplot as plt
 import numpy as np
-from ee545import utils
+from ee545 import utils
 import warnings
 
 

@@ -29,6 +29,8 @@ class PlanarProblem(object):
             utils.map_to_world(self.extents.T, map_info)
         self.extents = self.extents[:2, :]
 
+        self.goal_thresh = 0.1
+
     def check_state_validity(self, states):
         """Return whether states are valid.
 
@@ -47,6 +49,7 @@ class PlanarProblem(object):
         # Check that x and y are within the extents of the map.
         # BEGIN QUESTION 1.2
         "*** REPLACE THIS LINE ***"
+        raise NotImplementedError
         # END QUESTION 1.2
 
         # The units of the state are meters and radians. We need to convert the
@@ -65,6 +68,7 @@ class PlanarProblem(object):
         # the zeroth dimension is the height.
         # BEGIN QUESTION 1.2
         "*** REPLACE THIS LINE ***"
+        raise NotImplementedError
         # END QUESTION 1.2
 
         # Convert the units back from pixels to meters for the caller
@@ -109,6 +113,18 @@ class PlanarProblem(object):
             _, length = self.steer(start[start_i], end[end_i])
             heuristic_cost[i] = length
         return heuristic_cost
+
+    def goal_criterion(self, goal, q):
+        """Check if goal criterion is met between goal state and q state.
+
+        Args:
+            goal, q: np.arrays with shape (N, D) (where D may be 2 or 3)
+
+        Returns:
+            success: bool whether goal is reached
+        """
+        return self.compute_heuristic(goal, q) < self.goal_thresh
+
 
     def steer(self, q1, q2, **kwargs):
         """Return a local path connecting two states.
@@ -171,6 +187,8 @@ class SE2Problem(PlanarProblem):
         super(SE2Problem, self).__init__(permissible_region, map_info, check_resolution)
         self.curvature = curvature
         self.extents = np.vstack((self.extents, np.array([[-np.pi, np.pi]])))
+
+        self.goal_thresh = 1.5
 
     def compute_heuristic(self, q1, q2):
         """Compute the length of the Dubins path between two SE(2) states.
