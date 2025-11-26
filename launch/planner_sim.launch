@@ -8,6 +8,7 @@
     <arg name="controller" default="mpc"/>
     <arg name="teleop" default="true"/>
     <arg name="rviz" default="true" />
+    <arg name="num_goals" default="1"/>
 
     <arg name="num_vertices" default="200"/>
     <arg name="connection_radius" default="10.0"/>
@@ -36,6 +37,7 @@
             <param name="connection_radius" value="$(arg connection_radius)"/>
             <param name="curvature" value="$(arg curvature)"/>
             <param name="cache_roadmap" value="$(arg cache_roadmap)"/>
+            <param name="num_goals" value="$(arg num_goals)"/>
         </node>
     </group>
 
